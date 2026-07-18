@@ -66,6 +66,44 @@ body.night .det{background:#160404}
 .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}.subx{color:var(--ink);font-size:12px;font-family:ui-monospace,Menlo,monospace}
 .lnk{white-space:nowrap;font-size:12px}
 footer{color:var(--dim);font-size:11.5px;padding:18px 22px;border-top:1px solid var(--line)}
+.hright{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.nightbtn{white-space:nowrap}
+@media (max-width:820px){
+  body{font-size:13.5px}
+  header{flex-direction:column;gap:10px;padding:14px 14px 12px}
+  .hright{flex-direction:row;align-items:center;gap:10px;width:100%;justify-content:space-between}
+  .moonbox{display:flex;align-items:center;gap:10px;text-align:left;min-width:0;flex:1;padding:6px 10px}
+  .moonbox svg{flex:0 0 auto}
+  .moonbox .ph,.moonbox .il,.moonbox .adv{text-align:left;margin:0}
+  .moonbox .adv{display:inline}
+  .wrap{padding:12px 14px 60px}
+  .rig{padding:12px}.rigrow{gap:10px}.readout{margin-left:0;text-align:left;width:100%}
+  input[type=number]{width:100%}.fld{flex:1 1 44%}
+  .controls{gap:8px}.controls select,.controls input,.controls button{flex:1 1 44%}
+  .count{flex-basis:100%;text-align:left;margin:0}
+  /* table -> cards */
+  .tblwrap{overflow-x:visible;border:0;border-radius:0}
+  table,tbody{display:block;min-width:0;width:100%}
+  thead{display:none}
+  tr.main{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;margin:0 0 10px;padding:9px 13px;background:var(--panel)}
+  tr.main td{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:3px 0;border:0;text-align:right;width:100%}
+  tr.main td::before{content:attr(data-l);color:var(--mut);font-size:11px;text-align:left;flex:0 0 auto}
+  tr.main td.c-name{order:1;font-size:16px;font-weight:660;display:block;text-align:left;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:2px}
+  tr.main td.c-name::before{content:""}
+  tr.main td.c-score{order:2}tr.main td.c-img{order:3}tr.main td.c-pop{order:4}tr.main td.c-dif{order:5}
+  tr.main td.c-peak{order:6}tr.main td.c-frame{order:7}tr.main td.c-months{order:8}tr.main td.c-radec{order:9}
+  tr.main td.c-exp{order:10;justify-content:flex-start;padding-top:6px}tr.main td.c-exp::before{content:""}
+  tr.main td.c-chk{order:11;justify-content:flex-start}tr.main td.c-chk::before{content:"select for export"}
+  tr.main td.c-rank,tr.main td.c-type,tr.main td.c-filters,tr.main td.c-integr{display:none}
+  tr.main td.c-months>div{margin-left:auto}
+  /* detail -> stacked, responsive svg */
+  tr.det>td:first-child{display:none}
+  tr.det td{display:block;padding:10px 12px}
+  .detwrap{flex-direction:column!important;gap:14px!important}
+  .detwrap>div{flex:1 1 auto!important;width:100%!important}
+  .detwrap svg{width:100%!important;height:auto!important;max-width:400px;display:block;margin:0 auto}
+  .det .grid{grid-template-columns:1fr!important}
+}
 </style></head>
 <body>
 <header>
@@ -73,7 +111,10 @@ footer{color:var(--dim);font-size:11.5px;padding:18px 22px;border-top:1px solid 
     <h1>EAO Target Scout <span style="color:var(--good);font-size:12px;border:1px solid rgba(79,209,139,.4);padding:1px 7px;border-radius:20px;vertical-align:middle">LIVE</span></h1>
     <div class="sub" id="subtitle"></div>
   </div>
-  <div class="moonbox" id="moonbox"></div>
+  <div class="hright">
+    <button class="act nightbtn" id="nightBtn">🌙 Night mode</button>
+    <div class="moonbox" id="moonbox"></div>
+  </div>
 </header>
 <div class="wrap">
   <div class="rig">
@@ -107,7 +148,6 @@ footer{color:var(--dim);font-size:11.5px;padding:18px 22px;border-top:1px solid 
     <select id="fFrame"><option value="">Any framing</option><option value="good">Fills frame well</option></select>
     <input type="text" id="fSearch" placeholder="search name...">
     <button class="act" id="exportBtn">⤓ Export list (CSV)</button>
-    <button class="act" id="nightBtn">🌙 Night mode</button>
     <span class="count" id="count"></span>
   </div>
 
@@ -338,21 +378,21 @@ function monthChips(a){a=a||[];return '<div style="display:flex;gap:2px">'+MONTH
  return `<span title="${m}: ${h} dark h" style="width:9px;height:14px;border-radius:2px;background:${on?"rgba(94,200,255,"+(0.25+0.6*al)+")":"#1b2532"}"></span>`;}).join("")+"</div>";}
 function render(){const rows=rowsFiltered(),b=document.getElementById("body");b.innerHTML="";
  rows.forEach(d=>{const tr=document.createElement("tr");tr.className="main";
-  tr.innerHTML='<td class="chk"><input type="checkbox" data-sel="'+d.id+'"'+(SEL.has(d.id)?" checked":"")+'></td>'+
-   '<td class="expand" data-id="'+d.id+'"><span class="expbtn">▸ view</span></td>'+
-   "<td>"+d.rank+"</td>"+
-   '<td><span class="meter"><span style="width:'+d.score+'%;background:'+scoreColor(d.score)+'"></span></span><span class="scoreN" style="color:'+scoreColor(d.score)+'">'+d.score.toFixed(0)+"</span></td>"+
-   '<td><span class="nm">'+d.name+"</span>"+(d.common_name?'<br><span class="cm">'+d.common_name+"</span>":"")+"</td>"+
-   "<td>"+imgBadge(d.imaging_type)+"</td><td>"+d.type+"</td><td>"+popBadge(d.popularity)+"</td>"+
-   '<td class="mono">'+raStr(d.ra_deg)+"<br>"+decStr(d.dec_deg)+"</td>"+
-   "<td>"+d.peak_alt_deg.toFixed(0)+"°</td>"+
-   "<td>"+(d.best_months||"")+"<br>"+monthChips(d.monthly_dark_hours)+"</td>"+
-   "<td>"+d.fov_fit_pct+"% "+frameFlag(d.frame_flag)+'<br><span class="cm">'+d.framing.split(" — ")[0]+"</span></td>"+
-   '<td class="dif d'+d.difficulty_lvl+'">'+d.difficulty+"</td>"+
-   '<td class="cm">'+d.filters+"</td><td><b>"+d.total_integration+"</b></td>";
+  tr.innerHTML='<td class="chk c-chk"><input type="checkbox" data-sel="'+d.id+'"'+(SEL.has(d.id)?" checked":"")+'></td>'+
+   '<td class="expand c-exp" data-id="'+d.id+'"><span class="expbtn">▸ view</span></td>'+
+   '<td class="c-rank">'+d.rank+"</td>"+
+   '<td class="c-score" data-l="Score"><span class="meter"><span style="width:'+d.score+'%;background:'+scoreColor(d.score)+'"></span></span><span class="scoreN" style="color:'+scoreColor(d.score)+'">'+d.score.toFixed(0)+"</span></td>"+
+   '<td class="c-name"><span class="nm">'+d.name+"</span>"+(d.common_name?'<br><span class="cm">'+d.common_name+"</span>":"")+"</td>"+
+   '<td class="c-img" data-l="Imaging">'+imgBadge(d.imaging_type)+'</td><td class="c-type" data-l="Type">'+d.type+'</td><td class="c-pop" data-l="Imaged?">'+popBadge(d.popularity)+"</td>"+
+   '<td class="c-radec mono" data-l="RA / Dec">'+raStr(d.ra_deg)+"<br>"+decStr(d.dec_deg)+"</td>"+
+   '<td class="c-peak" data-l="Peak alt">'+d.peak_alt_deg.toFixed(0)+"°</td>"+
+   '<td class="c-months" data-l="Best months">'+(d.best_months||"")+"<br>"+monthChips(d.monthly_dark_hours)+"</td>"+
+   '<td class="c-frame" data-l="Frame fit">'+d.fov_fit_pct+"% "+frameFlag(d.frame_flag)+'<br><span class="cm">'+d.framing.split(" — ")[0]+"</span></td>"+
+   '<td class="c-dif dif d'+d.difficulty_lvl+'" data-l="Difficulty">'+d.difficulty+"</td>"+
+   '<td class="c-filters cm" data-l="Filters">'+d.filters+'</td><td class="c-integr" data-l="Integration"><b>'+d.total_integration+"</b></td>";
   b.appendChild(tr);
   const dr=document.createElement("tr");dr.className="det";dr.style.display="none";dr.dataset.for=d.id;const L=links(d.name),tn=d._tn;
-  dr.innerHTML='<td></td><td colspan="14"><div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">'+
+  dr.innerHTML='<td></td><td colspan="14"><div class="detwrap" style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">'+
    '<div style="flex:0 0 auto">'+framingSVG(d)+'<div class="cm" style="text-align:center;margin-top:2px">to-scale on your sensor</div></div>'+
    '<div style="flex:0 0 auto">'+altSVG(d)+'<div class="cm" style="text-align:center;margin-top:2px">annual altitude (rise &amp; drop)</div></div>'+
    '<div class="grid" style="flex:1 1 320px">'+
