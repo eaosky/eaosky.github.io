@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EAO Target Scout — Emirates Astronomical Observatory</title>
+<style>
+:root{--bg:#0c1118;--panel:#141c27;--panel2:#1b2532;--line:#26313f;--ink:#e8edf3;--mut:#94a3b5;--dim:#6b7a8d;
+--accent:#5ec8ff;--new:#ffcb5e;--good:#4fd18b;--mid:#f2b45c;--bad:#f2705c;--ha:#f2705c;--oiii:#5ec8ff;--sii:#c58cff;--bb:#ffd27a;}
+body.night{--bg:#0a0000;--panel:#1a0505;--panel2:#230707;--line:#3a0d0d;--ink:#ff6a6a;--mut:#c25252;--dim:#8a3a3a;
+--accent:#ff5a5a;--new:#ff8a5a;--good:#ff7a7a;--mid:#ff6a6a;--bad:#ff4a4a;--ha:#ff6a6a;--oiii:#ff7a7a;--sii:#ff8a8a;--bb:#ff9a6a;}
+body.night img,body.night svg{filter:saturate(0.3) sepia(1) hue-rotate(-30deg) brightness(0.9);}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+header{padding:16px 22px 12px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:flex-start;gap:16px}
+.htext{flex:1}h1{margin:0 0 3px;font-size:19px}.sub{color:var(--mut);font-size:12.5px}
+.moonbox{flex:0 0 auto;text-align:center;min-width:150px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.moonbox .ph{font-size:12px;color:var(--ink);font-weight:600;margin-top:2px}.moonbox .il{font-size:11px;color:var(--mut)}
+.moonbox .adv{font-size:10.5px;margin-top:3px}
+.wrap{padding:14px 22px 60px}
+.rig{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
+.rig h2{margin:0 0 10px;font-size:14px;color:var(--accent);letter-spacing:.3px}
+.rigrow{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.fld{display:flex;flex-direction:column;gap:4px}.fld label{font-size:11px;color:var(--mut)}
+select,input{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+input[type=number]{width:100px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--panel2);color:var(--mut);border:0;padding:8px 12px;cursor:pointer;font-size:13px}
+.seg button.on{background:var(--accent);color:#04121b;font-weight:600}
+.readout{margin-left:auto;text-align:right;color:var(--mut);font-size:12px;line-height:1.6}
+.readout b{color:var(--ink);font-size:15px}
+.tiles{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 6px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 15px;min-width:104px}
+.tile .v{font-size:20px;font-weight:650}.tile .k{color:var(--mut);font-size:12px}
+.status{margin:8px 0 0;padding:8px 13px;border-radius:9px;font-size:12.5px;border:1px solid var(--line)}
+.status.ok{background:rgba(79,209,139,.1);border-color:rgba(79,209,139,.35)}
+.status.warn{background:rgba(242,180,92,.1);border-color:rgba(242,180,92,.4)}
+.info{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 14px;margin:10px 0 2px;font-size:12px;color:var(--mut);line-height:1.7}
+.info b{color:var(--ink)}
+.controls{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:14px 0 10px}
+.count{color:var(--mut);font-size:12.5px;margin-left:auto}
+button.act{background:var(--panel2);color:var(--accent);border:1px solid rgba(94,200,255,.4);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:1280px}
+th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{position:sticky;top:0;background:var(--panel);cursor:pointer;user-select:none;font-size:12px;color:var(--mut);white-space:nowrap}
+th:hover{color:var(--ink)}tr.main:hover{background:var(--panel2)}
+td.cm{color:var(--mut);font-size:12px}.nm{font-weight:640}.cm{color:var(--mut);font-size:12px}
+.meter{display:inline-block;width:42px;height:8px;border-radius:5px;background:#223;vertical-align:middle;margin-right:6px;overflow:hidden}
+.meter>span{display:block;height:100%}.scoreN{font-weight:680}
+.badge{display:inline-block;padding:1.5px 7px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-nb{background:rgba(94,200,255,.14);color:var(--accent);border:1px solid rgba(94,200,255,.35)}
+.b-bb{background:rgba(255,210,122,.14);color:var(--bb);border:1px solid rgba(255,210,122,.4)}
+.b-both{background:rgba(197,140,255,.14);color:var(--sii);border:1px solid rgba(197,140,255,.35)}
+.pop{font-size:10.5px;padding:1px 6px;border-radius:6px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.pop.new{color:var(--new);border-color:rgba(255,203,94,.4)}.pop.cand{color:var(--sii);border-color:rgba(197,140,255,.35)}
+.pop.pop{color:var(--good);border-color:rgba(79,209,139,.35)}.pop.rare{color:var(--accent);border-color:rgba(94,200,255,.3)}
+.dif{font-weight:600}.d1{color:#4fd18b}.d2{color:#a7d94f}.d3{color:#f2b45c}.d4{color:#f2845c}.d5{color:#f2705c}
+.flag{display:inline-block;padding:1px 6px;border-radius:6px;font-size:10.5px;border:1px solid var(--line);color:var(--mut);margin-left:4px}
+.flag.warn{color:var(--mid);border-color:rgba(242,180,92,.4)}
+.expand{cursor:pointer;width:56px;text-align:center}
+.expbtn{display:inline-block;padding:3px 9px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;background:rgba(94,200,255,.13);color:var(--accent);border:1px solid rgba(94,200,255,.45);white-space:nowrap}
+.chk{width:26px;text-align:center}
+.det{background:#0f1620;color:var(--mut);font-size:12.5px}.det td{padding:12px 16px}
+body.night .det{background:#160404}
+.det .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 22px}.det b{color:var(--ink)}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}.subx{color:var(--ink);font-size:12px;font-family:ui-monospace,Menlo,monospace}
+.lnk{white-space:nowrap;font-size:12px}
+footer{color:var(--dim);font-size:11.5px;padding:18px 22px;border-top:1px solid var(--line)}
+</style></head>
+<body>
+<header>
+  <div class="htext">
+    <h1>EAO Target Scout <span style="color:var(--good);font-size:12px;border:1px solid rgba(79,209,139,.4);padding:1px 7px;border-radius:20px;vertical-align:middle">LIVE</span></h1>
+    <div class="sub" id="subtitle"></div>
+  </div>
+  <div class="moonbox" id="moonbox"></div>
+</header>
+<div class="wrap">
+  <div class="rig">
+    <h2>YOUR RIG — enter aperture &amp; f-ratio (focal length is derived); the list re-ranks by how well each target fills your frame</h2>
+    <div class="rigrow">
+      <div class="fld"><label>Camera</label><select id="cam"></select></div>
+      <div class="fld"><label>Sensor W (mm)</label><input type="number" id="sw" step="0.1"></div>
+      <div class="fld"><label>Sensor H (mm)</label><input type="number" id="sh" step="0.1"></div>
+      <div class="fld"><label>Pixel (µm)</label><input type="number" id="px" step="0.01"></div>
+      <div class="fld"><label>Aperture (mm)</label><input type="number" id="ap" step="1"></div>
+      <div class="fld"><label>f-ratio</label><input type="number" id="fr" step="0.1"></div>
+      <div class="fld"><label>Sensor type</label><div class="seg" id="kind"><button data-k="mono">Mono</button><button data-k="osc">OSC</button></div></div>
+      <div class="readout" id="readout"></div>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+  <div class="status warn" id="status">Loading…</div>
+  <div class="info" id="scoreinfo"></div>
+
+  <div class="controls">
+    <select id="fSort">
+      <option value="score">Sort: Score (framing-first)</option>
+      <option value="tonight">Sort: Best tonight</option>
+      <option value="difficulty">Sort: Easiest first</option>
+    </select>
+    <select id="fImg"><option value="">All imaging</option><option value="NB">Narrowband</option><option value="BB">Broadband</option><option value="both">Both</option></select>
+    <select id="fType"><option value="">All types</option></select>
+    <select id="fPop"><option value="">All popularity</option><option>Popular</option><option>Occasional</option><option>Rarely imaged</option><option>New discovery</option><option>Candidate</option></select>
+    <select id="fMonth"><option value="">Any month</option></select>
+    <select id="fFrame"><option value="">Any framing</option><option value="good">Fills frame well</option></select>
+    <input type="text" id="fSearch" placeholder="search name...">
+    <button class="act" id="exportBtn">⤓ Export list (CSV)</button>
+    <button class="act" id="nightBtn">🌙 Night mode</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="tblwrap"><table id="tbl"><thead><tr>
+    <th class="chk">✓</th><th data-k="__exp">View</th><th data-k="rank">#</th><th data-k="score">Score</th>
+    <th data-k="name">Target</th><th data-k="imaging_type">Img</th><th data-k="type">Type</th><th data-k="popularity">Imaged?</th>
+    <th data-k="ra_deg">RA / Dec</th><th data-k="peak_alt_deg">Peak</th>
+    <th data-k="best_months">Best months</th><th data-k="fov_fit_pct">Frame fit</th>
+    <th data-k="difficulty_lvl">Difficulty</th><th data-k="filters">Filters</th><th data-k="total_integration">Integr.</th>
+  </tr></thead><tbody id="body"></tbody></table></div>
+</div>
+<footer id="foot"></footer>
+
+<script>
+const CONFIG=__CONFIG_JSON__, SEED=__SEED_JSON__;
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONO=["J","F","M","A","M","J","J","A","S","O","N","D"];
+const SITE=CONFIG.site, D2R=Math.PI/180, R2D=180/Math.PI, TZ=4; // Asia/Dubai UTC+4
+
+/* ============ astronomy ============ */
+function jd(ms){return ms/86400000+2440587.5;}
+function sun(J){const n=J-2451545;let L=(280.460+0.9856474*n)%360;if(L<0)L+=360;let g=((357.528+0.9856003*n)%360)*D2R;
+ const lam=(L+1.915*Math.sin(g)+0.020*Math.sin(2*g))*D2R,eps=(23.439-0.0000004*n)*D2R;
+ let ra=Math.atan2(Math.cos(eps)*Math.sin(lam),Math.cos(lam))*R2D;if(ra<0)ra+=360;return{ra,dec:Math.asin(Math.sin(eps)*Math.sin(lam))*R2D};}
+function gmst(J){let t=(280.46061837+360.98564736629*(J-2451545))%360;return t<0?t+360:t;}
+function altOf(ra,dec,J){const lst=(gmst(J)+SITE.lon)%360,H=((lst-ra)%360)*D2R,dc=dec*D2R,la=SITE.lat*D2R;
+ return Math.asin(Math.max(-1,Math.min(1,Math.sin(la)*Math.sin(dc)+Math.cos(la)*Math.cos(dc)*Math.cos(H))))*R2D;}
+function computeObs(ra,dec){const peak=90-Math.abs(SITE.lat-dec),observable=peak>=SITE.min_peak_alt,thr=observable?SITE.min_peak_alt:SITE.horizon;
+ const dark=[],nmax=[];for(let m=0;m<12;m++){const t0=Date.UTC(2026,m,15,12,0,0);let c=0,mx=0;
+  for(let i=0;i<72;i++){const J=jd(t0+i*20*60000),s=sun(J),sa=altOf(s.ra,s.dec,J);if(sa<-18){const a=altOf(ra,dec,J);if(a>thr)c++;if(a>mx)mx=a;}}
+  dark.push(+(c*20/60).toFixed(1));nmax.push(+Math.max(0,mx).toFixed(1));}
+ const mx=Math.max(...dark);let best=mx<=0?[]:dark.map((h,i)=>h>=Math.max(1,0.6*mx)?i:-1).filter(i=>i>=0);
+ const s=new Set(best),runs=[];for(let i=0;i<12;i++){if(s.has(i)&&!s.has((i+11)%12)){let j=i;const st=i;while(s.has(j)){j=(j+1)%12;if(j===st)break;}runs.push([st,(j+11)%12]);}}
+ const lab=runs.map(([a,b])=>a===b?MONTHS[a]:MONTHS[a]+"-"+MONTHS[b]).join(", ")||"—";
+ return{peak_alt_deg:+peak.toFixed(1),best_months:lab,peak_dark_hours:mx,monthly_dark_hours:dark,monthly_night_max_alt:nmax};}
+function ensureObs(t){if(t.peak_alt_deg==null||!t.monthly_night_max_alt){Object.assign(t,computeObs(t.ra_deg,t.dec_deg));}return t;}
+
+/* moon phase + position */
+function moonPhase(now){const J=jd(now.getTime());let age=(J-2451550.1)%29.530588853;if(age<0)age+=29.530588853;
+ const frac=age/29.530588853,illum=(1-Math.cos(2*Math.PI*frac))/2,waxing=frac<0.5;
+ const names=[[1.85,"New Moon"],[5.54,"Waxing Crescent"],[9.23,"First Quarter"],[12.92,"Waxing Gibbous"],[16.61,"Full Moon"],[20.30,"Waning Gibbous"],[23.99,"Last Quarter"],[27.68,"Waning Crescent"]];
+ let name="New Moon";for(const[a,n]of names){if(age<a){name=n;break;}}
+ return{age,illum,waxing,name};}
+function moonRaDec(now){const J=jd(now.getTime()),d=J-2451543.5,r=D2R;
+ let N=(125.1228-0.0529538083*d)*r;const i=5.1454*r;let w=(318.0634+0.1643573223*d)*r;const a=60.2666,e=0.0549;
+ let M=(115.3654+13.0649929509*d)*r;let Ms=(356.0470+0.9856002585*d)*r;let ws=(282.9404+4.70935e-5*d)*r;let Ls=ws+Ms;
+ let E=M+e*Math.sin(M)*(1+e*Math.cos(M));for(let k=0;k<4;k++)E=E-(E-e*Math.sin(E)-M)/(1-e*Math.cos(E));
+ let xv=a*(Math.cos(E)-e),yv=a*Math.sqrt(1-e*e)*Math.sin(E),v=Math.atan2(yv,xv),rr=Math.sqrt(xv*xv+yv*yv);
+ let xh=rr*(Math.cos(N)*Math.cos(v+w)-Math.sin(N)*Math.sin(v+w)*Math.cos(i));
+ let yh=rr*(Math.sin(N)*Math.cos(v+w)+Math.cos(N)*Math.sin(v+w)*Math.cos(i));
+ let zh=rr*(Math.sin(v+w)*Math.sin(i));let lon=Math.atan2(yh,xh),lat=Math.atan2(zh,Math.sqrt(xh*xh+yh*yh));
+ let Lm=N+w+M,D=Lm-Ls,F=Lm-N;
+ lon+=(-1.274*Math.sin(M-2*D)+0.658*Math.sin(2*D)-0.186*Math.sin(Ms)-0.059*Math.sin(2*M-2*D)-0.057*Math.sin(M-2*D+Ms)
+  +0.053*Math.sin(M+2*D)+0.046*Math.sin(2*D-Ms)+0.041*Math.sin(M-Ms)-0.035*Math.sin(D)-0.031*Math.sin(M+Ms))*r;
+ lat+=(-0.173*Math.sin(F-2*D)-0.055*Math.sin(M-F-2*D)-0.046*Math.sin(M+F-2*D)+0.033*Math.sin(F+2*D)+0.017*Math.sin(2*M+F))*r;
+ const ecl=(23.4393-3.563e-7*d)*r;let xg=Math.cos(lon)*Math.cos(lat),yg=Math.sin(lon)*Math.cos(lat),zg=Math.sin(lat);
+ let xe=xg,ye=yg*Math.cos(ecl)-zg*Math.sin(ecl),ze=yg*Math.sin(ecl)+zg*Math.cos(ecl);
+ let ra=Math.atan2(ye,xe)*R2D;if(ra<0)ra+=360;return{ra,dec:Math.atan2(ze,Math.sqrt(xe*xe+ye*ye))*R2D};}
+function angsep(r1,d1,r2,d2){const r=D2R;return Math.acos(Math.max(-1,Math.min(1,Math.sin(d1*r)*Math.sin(d2*r)+Math.cos(d1*r)*Math.cos(d2*r)*Math.cos((r1-r2)*r))))*R2D;}
+function moonSVG(illum,waxing,R){const cx=R,cy=R,tr=(R*Math.abs(1-2*illum)).toFixed(1);
+ const limb=waxing?1:0;let term;if(illum<=0.5){term=waxing?0:1;}else{term=waxing?1:0;}
+ const d=`M ${cx},${cy-R} A ${R},${R} 0 0 ${limb} ${cx},${cy+R} A ${tr},${R} 0 0 ${term} ${cx},${cy-R} Z`;
+ return `<svg width="${2*R}" height="${2*R}" viewBox="0 0 ${2*R} ${2*R}" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="${cx}" cy="${cy}" r="${R}" fill="#20242e" stroke="#3a4150" stroke-width="1"/>
+  <path d="${d}" fill="#e9edf2"/><circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#3a4150" stroke-width="1"/></svg>`;}
+
+/* tonight (current date) — shared dark window precomputed once */
+let TN={darkJDs:[],nightHrs:0};
+function precomputeTonight(now){const base=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),12,0,0);
+ const jds=[];let darkCount=0;for(let i=0;i<96;i++){const J=jd(base+i*15*60000),s=sun(J);if(altOf(s.ra,s.dec,J)<-18){jds.push(J);darkCount++;}}
+ TN.darkJDs=jds;TN.nightHrs=+(darkCount*15/60).toFixed(1);}
+function tonight(ra,dec){let mx=-90,tJ=null,hrs=0;for(const J of TN.darkJDs){const a=altOf(ra,dec,J);if(a>mx){mx=a;tJ=J;}if(a>SITE.min_peak_alt)hrs++;}
+ let transit="—";if(tJ){const ms=(tJ-2440587.5)*86400000+TZ*3600000,dd=new Date(ms);transit=String(dd.getUTCHours()).padStart(2,"0")+":"+String(dd.getUTCMinutes()).padStart(2,"0");}
+ return{maxAlt:mx<0?0:+mx.toFixed(0),hours:+(hrs*15/60).toFixed(1),transit};}
+
+/* ============ rig ============ */
+const CAMERAS=[
+ ["ZWO ASI2600 / QHY268 / Poseidon (APS-C, IMX571)",23.5,15.7,3.76],
+ ["ZWO ASI6200 / QHY600 (full frame, IMX455)",36.0,24.0,3.76],
+ ["ZWO ASI533 / QHY533 / Ares (1\" square, IMX533)",11.3,11.3,3.76],
+ ["ZWO ASI294 / QHY294 (4/3, IMX294)",19.1,13.0,4.63],
+ ["ZWO ASI1600 (4/3)",17.7,13.4,3.8],
+ ["ZWO ASI183 / QHY183 (1\", IMX183)",13.2,8.8,2.4],
+ ["ZWO ASI2400 (full frame, IMX410)",36.0,24.0,5.94],
+ ["ZWO ASI461 / QHY461 (medium format)",44.0,33.0,3.76],
+ ["ZWO ASI071 (APS-C OSC, IMX071)",23.6,15.6,4.78],
+ ["Player One Uranus-M (IMX585)",11.2,6.3,2.9],
+ ["Player One Poseidon-M Pro (APS-C, IMX571)",23.5,15.7,3.76],
+ ["Canon/Nikon APS-C DSLR (24MP)",23.5,15.6,3.9],
+ ["Canon/Sony full-frame (24MP)",35.8,23.9,5.94],
+ ["Canon full-frame (30MP)",36.0,24.0,4.3],
+];
+let RIG={sw:23.5,sh:15.7,px:3.76,ap:108,fr:3.9,kind:"mono"};
+function fl(){return RIG.ap*RIG.fr;}
+function fov(){const F=fl(),w=2*Math.atan(RIG.sw/(2*F))*R2D*60,h=2*Math.atan(RIG.sh/(2*F))*R2D*60;
+ return{w,h,short:Math.min(w,h),long:Math.max(w,h),px:206.265*RIG.px/F,fl:F};}
+
+/* ============ framing / difficulty / popularity / guidance ============ */
+function framing(size){const F=fov(),frac=size/F.short,pct=100*size/F.short;
+ if(size>F.long*1.15){const c=Math.max(1,Math.round(size/(F.long*0.85))),rw=Math.max(1,Math.round((size)/(F.short*0.85)));return[pct,"Larger than frame — "+c+"×"+rw+" mosaic",0.25,c+"×"+rw+" mosaic"];}
+ if(frac>1.0) return[pct,"Fills / slightly exceeds the frame",0.82,""];
+ if(frac>=0.30&&frac<=0.90) return[pct,"Ideal — fills the frame nicely",1.0,""];
+ if(frac>=0.15&&frac<0.30) return[pct,"Comfortable — well framed",0.80,""];
+ if(frac>=0.06&&frac<0.15) return[pct,"Small in frame — longer FL better",0.42,"small"];
+ return[pct,"Tiny — wrong scale for this rig",0.12,"tiny"];}
+function difficulty(t){const F=fov(),faint={bright:0,medium:.34,faint:.67,vfaint:1}[t.surface_brightness]??.6;
+ const altH=Math.max(0,Math.min(1,(75-t.peak_alt_deg)/35));const frac=(+t.size_major_arcmin)/F.short;
+ const smallH=frac>=0.15?0:Math.min(1,(0.15-frac)/0.13);let d=0.4*faint+0.35*altH+0.25*smallH;
+ const e=(t.emission||"").toUpperCase();if(e==="SII"||(e==="OIII"&&/faint|vfaint/.test(t.surface_brightness)))d=Math.min(1,d+0.12);
+ const lvl=d<0.2?1:d<0.4?2:d<0.6?3:d<0.8?4:5;return{lvl,lab:["","Easy","Moderate","Hard","Very hard","Extreme"][lvl]};}
+function popularity(t){const nm=(t.name+" "+(t.common_name||"")).toLowerCase(),meta=((t.type||"")+" "+(t.note||"")).toLowerCase();
+ if(/candidate|possible|likely/.test(meta)) return "Candidate";
+ if(t.novelty==="recent"||/stdr|patchick|\bpa ?\d|sdso|sainty|nereides|\bou ?\d|strottner|drechsler/.test(nm)) return "New discovery";
+ const mag=t.magnitude!=null?+t.magnitude:null,hasC=!!t.common_name,mess=/^m\s?\d+/.test(t.name.toLowerCase());
+ if(mess||(hasC&&mag!=null&&mag<9)||(hasC&&(+t.size_major_arcmin)>=40)) return "Popular";
+ if(!hasC&&((mag!=null&&mag>12)||["faint","vfaint"].includes(t.surface_brightness))) return "Rarely imaged";
+ return "Occasional";}
+function nbFilters(type,emi,osc){const t=(type||"").toLowerCase(),e=(emi||"").toUpperCase();
+ if(osc){if(/snr|remnant|planetary|wr|bubble|arc/.test(t)||e==="OIII")return["OSC + dual-band (Hα+OIII)","dual-band (HOO-like)"];return["OSC + dual/tri-band (Hα+OIII[+SII])","dual/tri-band"];}
+ if(e==="SII")return["SII-led + Hα + OIII","SHO — SII showcase"];
+ if(/planetary|wr|wolf|bubble|arc|outflow/.test(t))return e==="OIII"?["OIII + Hα (SII weak)","HOO bicolor"]:["Hα + OIII + SII","HOO / SHO"];
+ if(/snr|remnant/.test(t))return["OIII + Hα co-lead","HOO (SHO if SII)"];
+ return["Hα + SII + OIII","SHO (Hubble)"];}
+function bbFilters(type,osc){const t=(type||"").toLowerCase();
+ if(osc)return["OSC (one-shot colour)","single OSC integration"];
+ if(/galaxy/.test(t))return["L R G B (+ Hα)","LRGB + Hα knots"];
+ if(/cluster/.test(t))return["L R G B","LRGB — short subs, star colour"];
+ if(/reflection|dark/.test(t))return["L R G B (heavy L)","LRGB — long luminance"];
+ return["L R G B","LRGB"];}
+function guidance(t){const osc=RIG.kind==="osc";
+ if(t.imaging_type==="NB")return nbFilters(t.type,t.emission,osc);
+ if(t.imaging_type==="BB")return bbFilters(t.type,osc);
+ const a=nbFilters(t.type,t.emission||"OIII",osc),b=bbFilters(t.type,osc);return[a[0]+"  ·or·  "+b[0],a[1]+" / "+b[1]];}
+const NB_TOT={bright:[4,8],medium:[8,15],faint:[15,30],vfaint:[30,70]},BB_TOT={bright:[2,5],medium:[4,9],faint:[8,16],vfaint:[15,30]};
+function integration(t){const sb=t.surface_brightness||"faint",im=t.imaging_type,f=RIG.fr,fast=f<=4.5,slow=f>=6.5,osc=RIG.kind==="osc";
+ if(im==="BB"){let[lo,hi]=BB_TOT[sb]||[5,10];if(fast)hi=Math.round(hi*.8);if(slow)hi=Math.round(hi*1.25);return[lo+"–"+hi+" h",osc?"OSC 120–300s":"L 180s / RGB 120s"];}
+ let[lo,hi]=NB_TOT[sb]||[10,20];if((t.emission||"").toUpperCase()==="OIII"&&/faint/.test(sb))hi=Math.round(hi*1.2);if(fast)hi=Math.round(hi*.85);if(slow)hi=Math.round(hi*1.2);
+ const sub=osc?"dual-band 300–600s":(f<=4?"Hα 300s / OIII,SII 600s":"Hα 600s / OIII,SII 900s");
+ if(im==="both")return[lo+"–"+hi+" h NB  ·or·  "+(BB_TOT[sb]||[5,10]).join("–")+" h",sub];return[lo+"–"+hi+" h",sub];}
+
+let MOON={ra:0,dec:0};
+function scoreTarget(t){const[pct,fr,F,flag]=framing(+t.size_major_arcmin);const[filters,palette]=guidance(t);const[tot,sub]=integration(t);
+ const a=Math.max(.05,Math.min(1,(t.peak_alt_deg-35)/50)),s={bright:1,medium:.75,faint:.5,vfaint:.3}[t.surface_brightness]??.6,d=Math.max(0,Math.min(1,(t.peak_dark_hours||0)/6));
+ const score=+(100*(0.45*F+0.20*a+0.20*s+0.15*d)).toFixed(1);const dif=difficulty(t);
+ const msep=Math.round(angsep(MOON.ra,MOON.dec,t.ra_deg,t.dec_deg));
+ return Object.assign({},t,{fov_fit_pct:Math.round(pct),framing:fr,frame_flag:flag,filters,palette,total_integration:tot,sub_len:sub,
+  difficulty_lvl:dif.lvl,difficulty:dif.lab,score,moon_sep:msep,
+  breakdown:`frame ${F.toFixed(2)}·0.45 | alt ${a.toFixed(2)}·0.20 | bright ${s.toFixed(2)}·0.20 | dark ${d.toFixed(2)}·0.15`});}
+
+/* ============ SVGs ============ */
+const EMIC={Ha:"#f2705c",OIII:"#5ec8ff",SII:"#c58cff"};
+function objColor(t){return t.imaging_type==="BB"?"#ffd27a":(EMIC[t.emission]||"#c58cff");}
+function niceBar(r){for(const[d,l]of[[2,"2°"],[1,"1°"],[.5,"30'"],[1/6,"10'"],[1/12,"5'"],[1/60,"1'"]])if(d<=r*.5)return[d,l];return[1/60,"1'"];}
+function framingSVG(t){const W=340,F=fov(),fw=F.w/60,fh=F.h/60,maj=(+t.size_major_arcmin)/60,mn=t.size_minor_arcmin?(+t.size_minor_arcmin)/60:maj;
+ const ref=Math.max(fw,fh,maj,mn)*1.18,dr=W-40,ppd=dr/ref,cx=W/2,cy=20+dr/2,H=Math.round(cy+dr/2+72);
+ const sw=fw*ppd,sh=fh*ppd,rx=Math.max(maj/2*ppd,2),ry=Math.max(mn/2*ppd,2),col=objColor(t),[sbd,sbl]=niceBar(ref),sbpx=sbd*ppd,over=maj>fh||maj>fw;
+ return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+  <rect width="${W}" height="${H}" fill="#0b1017" rx="8"/>
+  <rect x="${(cx-sw/2).toFixed(1)}" y="${(cy-sh/2).toFixed(1)}" width="${sw.toFixed(1)}" height="${sh.toFixed(1)}" fill="none" stroke="#7f8ea3" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="${(cx-sw/2+3).toFixed(1)}" y="${(cy-sh/2-5).toFixed(1)}" fill="#9fb0c3" font-size="11">frame ${fw.toFixed(2)}×${fh.toFixed(2)}° @ ${F.fl.toFixed(0)}mm</text>
+  <ellipse cx="${cx}" cy="${cy}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="${col}" fill-opacity="0.22" stroke="${col}" stroke-width="1.6"/>
+  <g stroke="#5a6b7d" stroke-width="1.2" fill="#8aa0b6" font-size="10"><line x1="${W-26}" y1="34" x2="${W-26}" y2="16"/><text x="${W-30}" y="13">N</text><line x1="${W-26}" y1="34" x2="${W-44}" y2="34"/><text x="${W-58}" y="38">E</text></g>
+  <g stroke="#9fb0c3" stroke-width="2"><line x1="20" y1="${H-40}" x2="${(20+sbpx).toFixed(1)}" y2="${H-40}"/><line x1="20" y1="${H-44}" x2="20" y2="${H-36}"/><line x1="${(20+sbpx).toFixed(1)}" y1="${H-44}" x2="${(20+sbpx).toFixed(1)}" y2="${H-36}"/></g>
+  <text x="20" y="${H-24}" fill="#9fb0c3" font-size="11">${sbl}</text>
+  <text x="${W-20}" y="${H-24}" text-anchor="end" fill="${col}" font-size="11">${t.name} — ${t.size_major_arcmin}' (${Math.round(100*maj*60/F.short)}%)${over?" — MOSAIC":""}</text></svg>`;}
+function altSVG(t){const nmax=t.monthly_night_max_alt||[],W=340,H=185,L=34,R=12,T=26,B=22,iw=W-L-R,ih=H-T-B,n=12;
+ const xs=[...Array(n)].map((_,i)=>L+iw*i/(n-1)),y=a=>T+ih*(1-Math.max(0,Math.min(90,a))/90);
+ const pts=xs.map((x,i)=>`${x.toFixed(1)},${y(nmax[i]||0).toFixed(1)}`).join(" "),area=`${xs[0].toFixed(1)},${y(0).toFixed(1)} ${pts} ${xs[n-1].toFixed(1)},${y(0).toFixed(1)}`;
+ const grid=[0,30,60,90].map(a=>`<line x1="${L}" y1="${y(a).toFixed(1)}" x2="${W-R}" y2="${y(a).toFixed(1)}" stroke="#202a37"/><text x="${L-5}" y="${(y(a)+3).toFixed(1)}" text-anchor="end" fill="#6b7a8d" font-size="9">${a}</text>`).join("");
+ const xl=xs.map((x,i)=>`<text x="${x.toFixed(1)}" y="${H-7}" text-anchor="middle" fill="#6b7a8d" font-size="9">${MONO[i]}</text>`).join("");
+ const dots=xs.map((x,i)=>`<circle cx="${x.toFixed(1)}" cy="${y(nmax[i]||0).toFixed(1)}" r="2.2" fill="#7f8ea3"/>`).join(""),g=SITE.min_peak_alt;
+ return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif"><rect width="${W}" height="${H}" fill="#0b1017" rx="8"/>${grid}
+  <polygon points="${area}" fill="#5ec8ff" opacity="0.14"/><polyline points="${pts}" fill="none" stroke="#5ec8ff" stroke-width="2"/>${dots}
+  <line x1="${L}" y1="${y(g).toFixed(1)}" x2="${W-R}" y2="${y(g).toFixed(1)}" stroke="#4fd18b" stroke-width="1.3" stroke-dasharray="5 3"/>
+  <text x="${W-R}" y="${(y(g)-4).toFixed(1)}" text-anchor="end" fill="#4fd18b" font-size="9">${g}° gate</text>
+  <text x="${L+2}" y="${T-9}" fill="#9fb0c3" font-size="10">Max altitude in darkness — peaks ${(t.peak_alt_deg||0).toFixed(0)}°</text>${xl}</svg>`;}
+
+/* ============ links / fmt ============ */
+function links(n){const q=encodeURIComponent(n);return{
+ astrobin:"https://www.astrobin.com/search/?q="+encodeURIComponent('"'+n+'"'),
+ tel:"https://telescopius.com/search/deep-sky?term="+q,
+ simbad:"https://simbad.u-strasbg.fr/simbad/sim-id?Ident="+q};}
+function raStr(r){const h=r/15,hh=h|0,m=(h-hh)*60,mm=m|0,ss=((m-mm)*60)|0;return `${String(hh).padStart(2,"0")} ${String(mm).padStart(2,"0")} ${String(ss).padStart(2,"0")}`;}
+function decStr(d){const s=d<0?"-":"+";d=Math.abs(d);const dd=d|0,m=(d-dd)*60,mm=m|0,ss=((m-mm)*60)|0;return `${s}${String(dd).padStart(2,"0")} ${String(mm).padStart(2,"0")} ${String(ss).padStart(2,"0")}`;}
+
+/* ============ data ============ */
+let RAW=[],DATA=[],SEL=new Set();
+function normalize(r){const g=(...k)=>{for(const kk of k)for(const c of Object.keys(r))if(c.trim().toLowerCase()===kk){const v=r[c];if(v!==""&&v!=null)return v;}return null;};
+ const name=g("name","target");const ra=parseFloat(g("ra_deg","ra")),dec=parseFloat(g("dec_deg","dec")),size=parseFloat(g("size_major_arcmin","size"));
+ if(!name||isNaN(ra)||isNaN(dec)||isNaN(size))return null;const o=Object.assign({},r);
+ o.name=String(name);o.ra_deg=ra;o.dec_deg=dec;o.size_major_arcmin=size;o.imaging_type=(g("imaging_type","imaging")||"BB");o.type=g("type")||"Object";
+ o.surface_brightness=(g("surface_brightness","sb")||"faint").toLowerCase();o.emission=g("emission")||"";o.common_name=g("common_name","common")||"";
+ o.magnitude=g("magnitude","mag");o.size_minor_arcmin=parseFloat(g("size_minor_arcmin"))||null;o.novelty=g("novelty")||"";o.note=g("note")||"";o.ref_url=g("ref_url","reference","link")||"";
+ o.id=(g("id")||name).toString().toLowerCase().replace(/\s+/g,"-");return o;}
+function recompute(){DATA=RAW.map(scoreTarget).filter(d=>d.peak_alt_deg>=SITE.min_peak_alt);sortData();DATA.forEach((d,i)=>d.rank=i+1);render();refreshTiles();}
+function sortData(){const m=document.getElementById("fSort").value;
+ if(m==="tonight")DATA.sort((a,b)=>(b._tn.hours+b._tn.maxAlt/90)-(a._tn.hours+a._tn.maxAlt/90));
+ else if(m==="difficulty")DATA.sort((a,b)=>a.difficulty_lvl-b.difficulty_lvl||b.score-a.score);
+ else DATA.sort((a,b)=>b.score-a.score);}
+
+/* ============ CSV / sheet ============ */
+function parseCSV(text){const rows=[];let row=[],cur="",q=false;for(let i=0;i<text.length;i++){const c=text[i];
+ if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}else{if(c==='"')q=true;else if(c===","){row.push(cur);cur="";}else if(c==="\n"){row.push(cur);rows.push(row);row=[];cur="";}else if(c==="\r"){}else cur+=c;}}
+ if(cur!==""||row.length){row.push(cur);rows.push(row);}if(!rows.length)return[];const h=rows[0].map(x=>x.trim());
+ return rows.slice(1).filter(r=>r.some(x=>x.trim()!=="")).map(r=>{const o={};h.forEach((k,i)=>o[k]=(r[i]??"").trim());return o;});}
+function sheetUrl(){const p=new URLSearchParams(location.search);let src=p.get("sheet")||CONFIG.sheet_id||"";if(!src)return null;
+ const m=src.match(/\/d\/([a-zA-Z0-9-_]+)/),id=m?m[1]:src,gid=p.get("gid")||CONFIG.sheet_gid||"0";return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`;}
+async function fetchSheet(){const u=sheetUrl();if(!u)return[];try{const r=await fetch(u,{cache:"no-store"});if(!r.ok)return[];return parseCSV(await r.text());}catch(e){return[];}}
+function exportCSV(){const rows=rowsFiltered();const cols=["rank","name","common_name","imaging_type","type","popularity","ra_deg","dec_deg","peak_alt_deg","best_months","fov_fit_pct","difficulty","filters","total_integration","sub_len","score"];
+ const esc=v=>{v=(v==null?"":String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+ const sel=rows.filter(r=>SEL.size===0||SEL.has(r.id));
+ const csv=[cols.join(",")].concat(sel.map(r=>cols.map(c=>esc(r[c])).join(","))).join("\n");
+ const blob=new Blob([csv],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="eao-session-plan.csv";a.click();}
+
+/* ============ render ============ */
+function scoreColor(s){return s>=70?"var(--good)":s>=50?"var(--mid)":"var(--bad)";}
+function imgBadge(i){return i==="NB"?'<span class="badge b-nb">NB</span>':i==="BB"?'<span class="badge b-bb">BB</span>':'<span class="badge b-both">NB+BB</span>';}
+function popBadge(p){const c=p==="New discovery"?"new":p==="Candidate"?"cand":p==="Popular"?"pop":p==="Rarely imaged"?"rare":"";return '<span class="pop '+c+'">'+p+"</span>";}
+function frameFlag(f){if(!f)return"";if(/mosaic/.test(f))return'<span class="flag warn">'+f+"</span>";return '<span class="flag'+(f==="tiny"?" warn":"")+'">'+f+"</span>";}
+let sortK="rank",sortAsc=true;
+function rowsFiltered(){const v=id=>document.getElementById(id).value;const fi=v("fImg"),ft=v("fType"),fp=v("fPop"),fm=v("fMonth"),ff=v("fFrame"),fs=v("fSearch").toLowerCase();
+ let r=DATA.filter(d=>{if(fi&&d.imaging_type!==fi)return false;if(ft&&d.type!==ft)return false;if(fp&&d.popularity!==fp)return false;
+  if(fs&&!((d.name+" "+(d.common_name||"")).toLowerCase().includes(fs)))return false;if(fm!==""&&((d.monthly_dark_hours||[])[+fm]||0)<1)return false;
+  if(ff==="good"&&!(d.fov_fit_pct>=15&&d.frame_flag===""))return false;return true;});
+ if(sortK!=="rank"){r=r.slice().sort((a,b)=>{let x=a[sortK],y=b[sortK];if(typeof x==="string"){x=x.toLowerCase();y=(y||"").toLowerCase();}return x<y?(sortAsc?-1:1):x>y?(sortAsc?1:-1):0;});}
+ return r;}
+function monthChips(a){a=a||[];return '<div style="display:flex;gap:2px">'+MONTHS.map((m,i)=>{const h=a[i]||0,on=h>=1,al=Math.min(1,h/6);
+ return `<span title="${m}: ${h} dark h" style="width:9px;height:14px;border-radius:2px;background:${on?"rgba(94,200,255,"+(0.25+0.6*al)+")":"#1b2532"}"></span>`;}).join("")+"</div>";}
+function render(){const rows=rowsFiltered(),b=document.getElementById("body");b.innerHTML="";
+ rows.forEach(d=>{const tr=document.createElement("tr");tr.className="main";
+  tr.innerHTML='<td class="chk"><input type="checkbox" data-sel="'+d.id+'"'+(SEL.has(d.id)?" checked":"")+'></td>'+
+   '<td class="expand" data-id="'+d.id+'"><span class="expbtn">▸ view</span></td>'+
+   "<td>"+d.rank+"</td>"+
+   '<td><span class="meter"><span style="width:'+d.score+'%;background:'+scoreColor(d.score)+'"></span></span><span class="scoreN" style="color:'+scoreColor(d.score)+'">'+d.score.toFixed(0)+"</span></td>"+
+   '<td><span class="nm">'+d.name+"</span>"+(d.common_name?'<br><span class="cm">'+d.common_name+"</span>":"")+"</td>"+
+   "<td>"+imgBadge(d.imaging_type)+"</td><td>"+d.type+"</td><td>"+popBadge(d.popularity)+"</td>"+
+   '<td class="mono">'+raStr(d.ra_deg)+"<br>"+decStr(d.dec_deg)+"</td>"+
+   "<td>"+d.peak_alt_deg.toFixed(0)+"°</td>"+
+   "<td>"+(d.best_months||"")+"<br>"+monthChips(d.monthly_dark_hours)+"</td>"+
+   "<td>"+d.fov_fit_pct+"% "+frameFlag(d.frame_flag)+'<br><span class="cm">'+d.framing.split(" — ")[0]+"</span></td>"+
+   '<td class="dif d'+d.difficulty_lvl+'">'+d.difficulty+"</td>"+
+   '<td class="cm">'+d.filters+"</td><td><b>"+d.total_integration+"</b></td>";
+  b.appendChild(tr);
+  const dr=document.createElement("tr");dr.className="det";dr.style.display="none";dr.dataset.for=d.id;const L=links(d.name),tn=d._tn;
+  dr.innerHTML='<td></td><td colspan="14"><div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">'+
+   '<div style="flex:0 0 auto">'+framingSVG(d)+'<div class="cm" style="text-align:center;margin-top:2px">to-scale on your sensor</div></div>'+
+   '<div style="flex:0 0 auto">'+altSVG(d)+'<div class="cm" style="text-align:center;margin-top:2px">annual altitude (rise &amp; drop)</div></div>'+
+   '<div class="grid" style="flex:1 1 320px">'+
+   "<div><b>Tonight:</b> peaks "+tn.maxAlt+"° at ~"+tn.transit+" local · "+tn.hours+" h above "+SITE.min_peak_alt+"°</div>"+
+   "<div><b>Moon separation now:</b> "+d.moon_sep+"°"+(d.moon_sep<30?' <span class="flag warn">close to moon</span>':"")+"</div>"+
+   "<div><b>Framing:</b> "+d.framing+" ("+d.fov_fit_pct+"% of short side, size "+d.size_major_arcmin+"')</div>"+
+   "<div><b>Filters / palette:</b> "+d.filters+" — "+d.palette+"</div>"+
+   "<div><b>Sub length:</b> "+d.sub_len+"</div><div><b>Total integration:</b> "+d.total_integration+"</div>"+
+   '<div><b>Difficulty:</b> <span class="dif d'+d.difficulty_lvl+'">'+d.difficulty+"</span> &nbsp; <b>Imaged:</b> "+d.popularity+"</div>"+
+   "<div><b>Imaging:</b> "+d.imaging_type+" &nbsp; <b>Surface bright.:</b> "+d.surface_brightness+(d.magnitude?" &nbsp; <b>Mag:</b> "+d.magnitude:"")+"</div>"+
+   "<div><b>Score:</b> "+d.score+' <span class="cm">('+d.breakdown+")</span></div>"+
+   (d.note?'<div style="grid-column:1/-1"><b>Notes:</b> '+d.note+"</div>":"")+
+   '<div style="grid-column:1/-1"><b>See real images:</b> <a href="'+L.astrobin+'" target="_blank">AstroBin ↗</a> &nbsp;·&nbsp; <a href="'+L.tel+'" target="_blank">Telescopius</a> &nbsp;·&nbsp; <a href="'+L.simbad+'" target="_blank">SIMBAD</a>'+(d.ref_url?' &nbsp;·&nbsp; <a href="'+d.ref_url+'" target="_blank">info</a>':"")+"</div>"+
+   "</div></div></td>";
+  b.appendChild(dr);});
+ document.getElementById("count").textContent=rows.length+" of "+DATA.length+" shown"+(SEL.size?" · "+SEL.size+" selected":"");}
+function refreshTiles(){const nb=DATA.filter(d=>d.imaging_type!=="BB").length,bb=DATA.filter(d=>d.imaging_type!=="NB").length,well=DATA.filter(d=>d.fov_fit_pct>=15&&d.frame_flag==="").length;
+ document.getElementById("tiles").innerHTML=tile(DATA.length,"targets up from EAO","")+tile(well,"fill your frame well","var(--good)")+tile(nb,"narrowband","var(--accent)")+tile(bb,"broadband","var(--bb)");}
+function tile(v,k,c){return '<div class="tile"><div class="v"'+(c?' style="color:'+c+'"':"")+'>'+v+"</div><div class=\"k\">"+k+"</div></div>";}
+
+/* ============ rig UI ============ */
+function fmtReadout(){const F=fov();document.getElementById("readout").innerHTML=`<b>${(F.w/60).toFixed(2)}° × ${(F.h/60).toFixed(2)}°</b><br>${F.fl.toFixed(0)}mm derived · ${F.px.toFixed(2)}″/px · f/${RIG.fr}`;}
+function syncInputs(){["sw","sh","px","ap","fr"].forEach(k=>document.getElementById(k).value=RIG[k]);
+ document.querySelectorAll("#kind button").forEach(btn=>btn.classList.toggle("on",btn.dataset.k===RIG.kind));fmtReadout();}
+function initRig(){const cam=document.getElementById("cam");CAMERAS.forEach((c,i)=>{const o=document.createElement("option");o.value=i;o.textContent=c[0];cam.appendChild(o);});
+ const cust=document.createElement("option");cust.value="custom";cust.textContent="Custom sensor";cam.appendChild(cust);cam.value=10;RIG.sw=23.5;RIG.sh=15.7;RIG.px=3.76;
+ cam.addEventListener("change",()=>{const v=cam.value;if(v!=="custom"){const c=CAMERAS[+v];RIG.sw=c[1];RIG.sh=c[2];RIG.px=c[3];syncInputs();recompute();}});
+ ["sw","sh","px","ap","fr"].forEach(id=>document.getElementById(id).addEventListener("input",()=>{RIG[id]=+document.getElementById(id).value||RIG[id];document.getElementById("cam").value="custom";fmtReadout();recompute();}));
+ document.querySelectorAll("#kind button").forEach(btn=>btn.addEventListener("click",()=>{RIG.kind=btn.dataset.k;syncInputs();recompute();}));
+ syncInputs();}
+
+/* ============ boot ============ */
+function drawMoon(){const now=new Date();const mp=moonPhase(now);MOON=moonRaDec(now);
+ const pct=Math.round(mp.illum*100);let adv,col;if(pct<35){adv="Good for OIII / broadband";col="var(--good)";}else if(pct<60){adv="OK — favour Hα";col="var(--mid)";}else{adv="Bright — Hα / narrowband only";col="var(--bad)";}
+ document.getElementById("moonbox").innerHTML=moonSVG(mp.illum,mp.waxing,26)+`<div class="ph">${mp.name}</div><div class="il">${pct}% illuminated</div><div class="adv" style="color:${col}">${adv}</div>`;}
+function boot(rawTargets,statusHtml,cls){RAW=rawTargets.map(normalize).filter(Boolean).map(ensureObs);
+ const now=new Date();precomputeTonight(now);RAW.forEach(t=>{t._tn=tonight(t.ra_deg,t.dec_deg);t.popularity=popularity(t);});
+ drawMoon();
+ document.getElementById("subtitle").textContent=(CONFIG.title||"Emirates Astronomical Observatory")+" — lat "+SITE.lat.toFixed(3)+", lon "+SITE.lon.toFixed(3)+" · "+RAW.length+" targets · tonight's astro-dark: "+TN.nightHrs+" h";
+ document.getElementById("scoreinfo").innerHTML="<b>How the score works:</b> Score (0–100) = 0.45 × framing fit + 0.20 × culmination altitude + 0.20 × surface brightness + 0.15 × dark-sky hours — i.e. how well a target suits <i>your</i> rig &amp; site, framing weighted highest. <b>Difficulty</b> is separate: a blend of faintness + how low it culminates + how small it is in your frame (with a bump for SII / pure-OIII). Moon is deliberately kept out of both — use the phase widget top-right to judge tonight.";
+ const st=document.getElementById("status");st.className="status "+cls;st.innerHTML=statusHtml;
+ const ts=document.getElementById("fType");[...new Set(RAW.map(t=>t.type))].sort().forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;ts.appendChild(o);});
+ const ms=document.getElementById("fMonth");MONTHS.forEach((m,i)=>{const o=document.createElement("option");o.value=i;o.textContent=m;ms.appendChild(o);});
+ recompute();const f=document.querySelector("#body .expand");if(f)f.click();
+ document.getElementById("foot").textContent="EAO Target Scout — "+RAW.length+" targets, framing-ranked for your rig. Observability precomputed for the fixed site; framing/difficulty/moon recomputed in your browser. Moon & tonight figures use your device clock. J2000.";}
+async function load(){let raw=null,note="",cls="warn";
+ try{const r=await fetch("catalog.json",{cache:"no-store"});if(r.ok){const j=await r.json();raw=j.targets||j;note=`Loaded ${raw.length} targets from the cloud catalogue.`;cls="ok";}}catch(e){}
+ if(!raw){raw=SEED.targets;note=`Showing the built-in catalogue of ${raw.length} targets (cloud catalogue not built yet).`;}
+ const sheet=await fetchSheet();if(sheet.length){const key=r=>String(r.name||r.Name||"").trim().toLowerCase();const byName={};raw.forEach(t=>byName[key(t)]=t);let ov=0,ad=0;
+  sheet.forEach(r=>{const k=key(r);if(!k)return;if(byName[k]){Object.assign(byName[k],r);ov++;}else{raw.push(r);ad++;}});note+=` +${ov+ad} from your Google Sheet.`;cls="ok";}
+ boot(raw,note,cls);}
+document.getElementById("body").addEventListener("click",e=>{const cb=e.target.closest("input[data-sel]");if(cb){const id=cb.dataset.sel;if(cb.checked)SEL.add(id);else SEL.delete(id);document.getElementById("count").textContent=rowsFiltered().length+" of "+DATA.length+" shown"+(SEL.size?" · "+SEL.size+" selected":"");return;}
+ const ex=e.target.closest(".expand");if(!ex)return;const dr=document.querySelector('.det[data-for="'+CSS.escape(ex.dataset.id)+'"]');const open=dr.style.display!=="none";dr.style.display=open?"none":"table-row";const btn=ex.querySelector(".expbtn");if(btn)btn.textContent=open?"▸ view":"▾ hide";});
+document.querySelectorAll("th[data-k]").forEach(th=>{const k=th.dataset.k;if(k==="__exp")return;th.addEventListener("click",()=>{if(sortK===k)sortAsc=!sortAsc;else{sortK=k;sortAsc=true;}render();});});
+["fImg","fType","fPop","fMonth","fFrame"].forEach(id=>document.getElementById(id).addEventListener("change",render));
+document.getElementById("fSort").addEventListener("change",()=>{sortK="rank";recompute();});
+document.getElementById("fSearch").addEventListener("input",render);
+document.getElementById("exportBtn").addEventListener("click",exportCSV);
+document.getElementById("nightBtn").addEventListener("click",()=>document.body.classList.toggle("night"));
+initRig();load();
+</script>
+</body></html>

@@ -1,0 +1,200 @@
+name: Build EAO catalogue
+
+# Runs in GitHub's cloud (your PC can be off). Expands the curated seed into a
+# comprehensive NB + BB catalogue from OpenNGC (all NGC/IC) + VizieR (Sharpless
+# HII, Green SNRs), classifies imaging type, PRECOMPUTES observability for the
+# fixed EAO site, and commits catalog.json which the dashboard loads.
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ '.github/workflows/build_catalog.yml', 'data/eao_seed.json' ]
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install --quiet astropy numpy astroquery requests
+
+      - name: Build catalogue
+        env:
+          SITE_LAT: "23.578079817186588"
+          SITE_LON: "54.745467101634326"
+          MIN_PEAK: "40"
+          HORIZON: "28"
+          DEC_MIN: "-26.4"
+          DEC_MAX: "73.6"
+          MIN_SIZE: "2.5"
+          MAX_TOTAL: "2600"
+        run: |
+          python - <<'PY'
+          import os, csv, io, json, math, urllib.request
+          import numpy as np, astropy.units as u
+          from astropy.coordinates import EarthLocation, AltAz, SkyCoord, get_sun
+          from astropy.time import Time
+
+          LAT=float(os.environ["SITE_LAT"]); LON=float(os.environ["SITE_LON"])
+          MINPK=float(os.environ["MIN_PEAK"]); HOR=float(os.environ["HORIZON"])
+          DMIN=float(os.environ["DEC_MIN"]); DMAX=float(os.environ["DEC_MAX"])
+          MINSZ=float(os.environ["MIN_SIZE"]); MAXTOT=int(os.environ["MAX_TOTAL"])
+          LOC=EarthLocation(lat=LAT*u.deg, lon=LON*u.deg, height=120*u.m)
+          MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+          # ---------- observability (mirror of the app / project-1) ----------
+          def obs(ra, dec):
+              peak=90-abs(LAT-dec); observable=peak>=MINPK
+              thr=MINPK if observable else HOR
+              tgt=SkyCoord(ra=ra*u.deg, dec=dec*u.deg); dark=[]; nmax=[]
+              for m in range(1,13):
+                  t0=Time(f"2026-{m:02d}-15T12:00:00"); times=t0+np.arange(72)*20*u.min
+                  aa=AltAz(obstime=times, location=LOC)
+                  ta=tgt.transform_to(aa).alt.deg; sa=get_sun(times).transform_to(aa).alt.deg
+                  d=sa<-18
+                  dark.append(round(float(((d)&(ta>thr)).sum())*20/60,1))
+                  nmax.append(round(float(ta[d].max()) if d.any() else 0,1))
+              mx=max(dark)
+              best=[i for i,h in enumerate(dark) if h>=max(1,0.6*mx)] if mx>0 else []
+              # contiguous label
+              s=set(best); runs=[]
+              for i in range(12):
+                  if i in s and (i-1)%12 not in s:
+                      j=i
+                      while j in s: j=(j+1)%12
+                      runs.append((i,(j-1)%12))
+              lab=", ".join(MONTHS[a] if a==b else f"{MONTHS[a]}-{MONTHS[b]}" for a,b in runs) or "—"
+              return dict(peak_alt_deg=round(peak,1), best_months=lab, peak_dark_hours=mx,
+                          monthly_dark_hours=dark, monthly_night_max_alt=nmax), observable
+
+          def sb_from_mag(mag):
+              if mag is None: return "faint"
+              if mag<8: return "bright"
+              if mag<11: return "medium"
+              if mag<13: return "faint"
+              return "vfaint"
+
+          # ---------- seed (wins; already has observability) ----------
+          with open("data/eao_seed.json") as f:
+              seed=json.load(f)["targets"]
+          out=list(seed)
+          seen_name={t["name"].strip().lower() for t in seed}
+          seen_pos=[(t["ra_deg"],t["dec_deg"]) for t in seed]
+          def dup(name,ra,dec):
+              if name.strip().lower() in seen_name: return True
+              for (r,d) in seen_pos:
+                  if math.hypot(ra-r,dec-d)<0.12: return True
+              return False
+          def add(t):
+              seen_name.add(t["name"].strip().lower()); seen_pos.append((t["ra_deg"],t["dec_deg"])); out.append(t)
+
+          # ---------- OpenNGC (all NGC/IC) ----------
+          TYPE={"G":("Galaxy","BB",""),"GPair":("Galaxy pair","BB",""),"GTrpl":("Galaxy triplet","BB",""),
+                "GGroup":("Galaxy group","BB",""),"OCl":("Open cluster","BB",""),"GCl":("Globular cluster","BB",""),
+                "RfN":("Reflection nebula","BB",""),"DrkN":("Dark nebula","BB",""),
+                "EmN":("Emission nebula","NB","Ha"),"HII":("HII region","NB","Ha"),
+                "SNR":("Supernova remnant","NB","OIII"),"PN":("Planetary nebula","both","OIII"),
+                "Neb":("Nebula","both","Ha"),"Cl+N":("Cluster + nebula","both","Ha")}
+          def sx_ra(s):
+              hh,mm,ss=s.split(":"); return (float(hh)+float(mm)/60+float(ss)/3600)*15
+          def sx_dec(s):
+              sign=-1 if s.strip()[0]=="-" else 1; p=s.strip().lstrip("+-").split(":")
+              return sign*(float(p[0])+float(p[1])/60+float(p[2])/3600)
+          cand=[]
+          try:
+              url="https://raw.githubusercontent.com/mattiaverga/OpenNGC/master/database_files/NGC.csv"
+              txt=urllib.request.urlopen(url, timeout=60).read().decode("utf-8","replace")
+              rdr=csv.DictReader(io.StringIO(txt), delimiter=";")
+              for r in rdr:
+                  ot=(r.get("Type") or "").strip()
+                  if ot not in TYPE: continue
+                  try:
+                      ra=sx_ra(r["RA"]); dec=sx_dec(r["Dec"])
+                  except Exception: continue
+                  if not (DMIN<=dec<=DMAX): continue
+                  try: maj=float(r.get("MajAx") or 0)
+                  except: maj=0
+                  if maj<MINSZ: continue
+                  try: mn=float(r.get("MinAx") or 0) or None
+                  except: mn=None
+                  mag=None
+                  for k in ("V-Mag","B-Mag"):
+                      try:
+                          mag=float(r.get(k)); break
+                      except: pass
+                  typ,im,emi=TYPE[ot]
+                  nm=r.get("Name","").strip()
+                  common=(r.get("Common names") or "").split(",")[0].strip()
+                  cand.append({"name":nm,"common_name":common,"type":typ,"imaging_type":im,
+                               "ra_deg":round(ra,5),"dec_deg":round(dec,5),
+                               "size_major_arcmin":round(maj,1),"size_minor_arcmin":(round(mn,1) if mn else None),
+                               "magnitude":mag,"emission":emi,"surface_brightness":sb_from_mag(mag),
+                               "novelty":"catalogue","low_precision":False,
+                               "ref_url":"https://github.com/mattiaverga/OpenNGC",
+                               "note":f"OpenNGC {ot}; auto-classified."})
+              print(f"[openngc] {len(cand)} imageable objects in window")
+          except Exception as e:
+              print(f"[openngc] failed: {e}")
+
+          # ---------- VizieR: Sharpless HII (VII/20) + Green SNR (VII/284) ----------
+          def vizier(cid, typ, im, emi, ref):
+              got=[]
+              try:
+                  from astroquery.vizier import Vizier
+                  v=Vizier(columns=["*","_RAJ2000","_DEJ2000"]); v.ROW_LIMIT=-1
+                  for t in v.get_catalogs(cid):
+                      cols={c.lower():c for c in t.colnames}
+                      rc=next((cols[k] for k in ("_raj2000","raj2000") if k in cols),None)
+                      dc=next((cols[k] for k in ("_dej2000","dej2000") if k in cols),None)
+                      nc=next((cols[k] for k in ("sh2","snr","name","simbad") if k in cols),None)
+                      sc=next((cols[k] for k in ("diam","majdiam","majaxis","size") if k in cols),None)
+                      if not rc or not dc: continue
+                      for row in t:
+                          try: ra=float(row[rc]); dec=float(row[dc])
+                          except: continue
+                          if not (DMIN<=dec<=DMAX): continue
+                          try: sz=float(str(row[sc]).split("x")[0]) if sc else 15
+                          except: sz=15
+                          if sz<MINSZ: continue
+                          nm=(("Sh2-"+str(row[nc])) if nc and cid=="VII/20" else (str(row[nc]) if nc else f"{typ}-{ra:.2f}"))
+                          got.append({"name":nm,"common_name":"","type":typ,"imaging_type":im,
+                                      "ra_deg":round(ra,5),"dec_deg":round(dec,5),"size_major_arcmin":round(sz,1),
+                                      "size_minor_arcmin":None,"magnitude":None,"emission":emi,
+                                      "surface_brightness":"faint","novelty":"catalogue","low_precision":True,
+                                      "ref_url":ref,"note":f"From {cid}; emission by type."})
+                  print(f"[vizier] {cid}: {len(got)}")
+              except Exception as e:
+                  print(f"[vizier] {cid} failed: {e}")
+              return got
+          cand+=vizier("VII/20","HII region","NB","Ha","https://vizier.cds.unistra.fr/viz-bin/VizieR?-source=VII/20")
+          cand+=vizier("VII/284","Supernova remnant","NB","OIII","https://vizier.cds.unistra.fr/viz-bin/VizieR?-source=VII/284")
+
+          # ---------- dedupe + cap (biggest first) ----------
+          cand.sort(key=lambda x:-(x["size_major_arcmin"]))
+          for c in cand:
+              if len(out)>=MAXTOT: break
+              if dup(c["name"],c["ra_deg"],c["dec_deg"]): continue
+              o,observable=obs(c["ra_deg"],c["dec_deg"])
+              if not observable: continue
+              c.update(o); c["id"]=c["name"].lower().replace(" ","-"); add(c)
+
+          site={"lat":LAT,"lon":LON,"min_peak_alt":MINPK,"horizon":HOR}
+          with open("catalog.json","w") as f:
+              json.dump({"version":"1.0","site":site,"targets":out}, f)
+          nb=sum(1 for t in out if t["imaging_type"]=="NB"); bb=sum(1 for t in out if t["imaging_type"]=="BB")
+          print(f"[done] catalog.json: {len(out)} targets (NB {nb}, BB {bb}, both {len(out)-nb-bb})")
+          PY
+
+      - name: Commit if changed
+        run: |
+          if [ -n "$(git status --porcelain catalog.json)" ]; then
+            git config user.name "eao-bot"; git config user.email "actions@users.noreply.github.com"
+            git add catalog.json; git commit -m "Rebuild EAO catalogue"; git push
+          else echo "No changes"; fi
